@@ -1,0 +1,71 @@
+<template>
+    <lightning-card title="Object Explorer">
+        <div class="search-box">
+            <label>Select Object</label>
+            <lightning-input
+                placeholder="Type object name..."
+                value={searchKey}
+                onchange={handleSearch}>
+            </lightning-input>
+
+            <template if:true={showList}>
+                <ul class="list">
+                    <template for:each={filteredObjects} for:item="obj">
+                        <li key={obj} onclick={selectObject}>{obj}</li>
+                    </template>
+                </ul>
+            </template>
+        </div>
+
+        <template if:true={selectedObject}>
+            <div class="explorer-container">
+                <c-field-list
+                    object-name={selectedObject}
+                    depth="1"
+                    onexpand={handleExpand}>
+                </c-field-list>
+
+                <template for:each={expandedObjects} for:item="rel">
+                    <c-field-list
+                        key={rel.name}
+                        object-name={rel.name}
+                        depth={rel.depth}
+                        onexpand={handleExpand}>
+                    </c-field-list>
+                </template>
+            </div>
+        </template>
+    </lightning-card>
+</template>
+
+
+
+<!-- <template>
+    <lightning-card title="Search Objects">
+        <div class="search-box">
+            <label>Search Object</label>
+            <lightning-input
+                type="text"
+                placeholder="Type to search..."
+                value={searchKey}
+                onchange={handleSearch}>
+            </lightning-input>
+
+            <template if:true={showList}>
+                <ul class="list">
+                    <template for:each={filteredObjects} for:item="obj">
+                        <li key={obj} onclick={selectObject}>{obj}</li>
+                    </template>
+                </ul>
+            </template>
+        </div>
+
+        <template if:true={selectedObject}>
+            <div class="selected">
+                
+                <c-field-list object-name={selectedObject}></c-field-list>
+                <p><strong>Selected Object:</strong> {selectedObject}</p>
+            </div>
+        </template>
+    </lightning-card>
+</template> -->

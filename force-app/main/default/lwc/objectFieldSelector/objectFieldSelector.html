@@ -1,0 +1,61 @@
+<template>
+    <lightning-card title="Object Selector">
+
+        <lightning-combobox
+            label="Select Object"
+            value={selectedObject}
+            options={objectOptions}
+            onchange={handleObjectChange}>
+        </lightning-combobox>
+
+        <br/>
+
+        <template for:each={fieldRows} for:item="row" for:index="index">
+            <div key={row.id} class="rowBox">
+
+                <div class="custom-input"
+                     data-index={index}
+                     onclick={openFieldPopup}>
+                    <template if:true={row.value}>
+                        {row.value}
+                    </template>
+                    <template if:false={row.value}>
+                        <span class="placeholder">Select field...</span>
+                    </template>
+                </div>
+
+                <lightning-button-icon
+                    icon-name="utility:add"
+                    alternative-text="Add"
+                    data-index={index}
+                    onclick={addRow}>
+                </lightning-button-icon>
+
+                <lightning-button-icon
+                    icon-name="utility:delete"
+                    alternative-text="Remove"
+                    data-index={index}
+                    onclick={removeRow}>
+                </lightning-button-icon>
+
+            </div>
+        </template>
+
+        <br/>
+
+        <lightning-button
+            variant="brand"
+            label="Preview Records"
+            onclick={preview}>
+        </lightning-button>
+
+        <br/><br/>
+
+        <c-object-data-viewer
+            object-name={selectedObject}
+            selected-fields={selectedFields}
+            onfieldselect={handleFieldSelect}>
+        </c-object-data-viewer>
+
+    </lightning-card>
+</template>

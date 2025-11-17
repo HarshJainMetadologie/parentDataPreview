@@ -1,0 +1,49 @@
+.container {
+    position: relative;
+    width: 420px;
+}
+
+.list-container {
+    margin-top: 5px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 6px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.list-item {
+    padding: 6px;
+    cursor: pointer;
+}
+
+.list-item:hover {
+    background: #f3f3f3;
+}
+
+.fields-area {
+    margin-top: 16px;
+    display: block;
+    width: 100%;
+}
+
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.plus, .minus {
+    padding: 6px 8px;
+    cursor: pointer;
+    border: 1px solid #bbb;
+    background: #fff;
+    border-radius: 4px;
+}
+
+.actions {
+    margin-top: 14px;
+}

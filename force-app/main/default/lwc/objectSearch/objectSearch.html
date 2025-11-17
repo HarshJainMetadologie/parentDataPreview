@@ -1,0 +1,69 @@
+<template>
+    <div class="container" onclick={stopPropagation}>
+
+        <lightning-input
+            type="text"
+            label="Search Object"
+            placeholder="Type to search object..."
+            value={searchKey}
+            onkeyup={handleTyping}
+            onchange={handleTyping}
+            onclick={openList}>
+        </lightning-input>
+
+        <template if:true={showList}>
+            <div class="list-container" onclick={stopPropagation}>
+                <template for:each={filteredObjects} for:item="obj">
+                    <div key={obj} class="list-item" data-name={obj} onclick={selectObject}>
+                        {obj}
+                    </div>
+                </template>
+            </div>
+        </template>
+
+    </div>
+
+    <template if:true={selectedObject}>
+
+        <div class="fields-area">
+            <template for:each={inputBoxes} for:item="box">
+                <div key={box.id} class="input-row">
+
+                    <div data-id={box.id} onclick={openPopup}>
+                        <lightning-input
+                            label="Select Field"
+                            value={box.value}>
+                        </lightning-input>
+                    </div>
+
+                    <button class="plus" data-id={box.id} onclick={addBox}>+</button>
+                    <button class="minus" data-id={box.id} onclick={removeBox}>-</button>
+
+                </div>
+            </template>
+        </div>
+
+        <div class="actions">
+            <lightning-button label="Preview" onclick={preview}></lightning-button>
+            <lightning-button label="Clear Preview" onclick={clearPreview} variant="neutral"></lightning-button>
+        </div>
+
+        <template if:true={showPreview}>
+            <lightning-datatable 
+                key-field="__index"
+                data={previewData}
+                columns={previewColumns}>
+            </lightning-datatable>
+        </template>
+    </template>
+
+   <template if:true={showPopup}>
+        <c-field-popup 
+            show-popup={showPopup}
+            object-name={selectedObject}
+            onfieldselect={handleFieldSelect}
+            onclosepopup={closePopup}>
+        </c-field-popup>
+    </template>
+
+</template>

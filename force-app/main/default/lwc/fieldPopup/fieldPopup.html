@@ -1,0 +1,42 @@
+<template>
+    <template if:true={showPopup}>
+
+        <div class="popup-backdrop" onclick={close}></div>
+
+        <div class="popup-box" onclick={stopPropagation}>
+
+            <h2 class="title">Select Field ({currentObject})</h2>
+
+            <template if:true={chainString}>
+                <div class="path">{chainString}</div>
+            </template>
+
+            <div class="field-list">
+                <template for:each={fields} for:item="f">
+                    <div key={f.name} class="field-row">
+
+                        <span class="field-text"
+                              data-name={f.name}
+                              onclick={selectField}>
+                            {f.label} ({f.name})
+                        </span>
+
+                        <template if:true={f.isLookup}>
+                            <button class="expand-btn"
+                                    data-name={f.name}
+                                    data-ref={f.referenceObjectsString}
+                                    onclick={expand}>
+                                &gt;
+                            </button>
+                        </template>
+
+                    </div>
+                </template>
+            </div>
+
+            <button class="close-btn" onclick={close}>Close</button>
+
+        </div>
+
+    </template>
+</template>

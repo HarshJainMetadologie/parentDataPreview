@@ -1,0 +1,63 @@
+<template>
+    <lightning-card title="Object Data">
+        <div class="search-box">
+            <label>Select Object</label>
+            <lightning-input
+                placeholder="Type object name..."
+                value={searchKey}
+                onchange={handleSearch}>
+            </lightning-input>
+            
+
+            <template if:true={showList}>
+                <ul class="list">
+                    <template for:each={filteredObjects} for:item="obj">
+                        <li key={obj} onclick={selectObject}>{obj}</li>
+                    </template>
+                </ul>
+            </template>
+            <lightning-input
+                placeholder="Field Name"
+                value={}
+                onchange={}>
+            </lightning-input>
+        </div>
+
+        <template if:true={selectedObject}>
+            <div class="viewer-container">
+                <c-field-viewer
+                    object-name={selectedObject}
+                    depth="1"
+                    onexpand={handleExpand}
+                    onfieldselect={handleFieldSelect}>
+                </c-field-viewer>
+
+                <template for:each={expandedObjects} for:item="rel">
+                    <c-field-viewer
+                        key={rel.name}
+                        object-name={rel.name}
+                        depth={rel.depth}
+                        onexpand={handleExpand}
+                        onfieldselect={handleFieldSelect}>
+                    </c-field-viewer>
+                </template>
+            </div>
+
+            <div class="field-selection">
+                <!-- <lightning-button-icon icon-name="utility:add" alternative-text="Add Field" onclick={addField}></lightning-button-icon> -->
+                <lightning-button-icon icon-name="utility:dash" alternative-text="Remove Field" onclick={removeField}></lightning-button-icon>
+                <template for:each={selectedFields} for:item="fld">
+                    <p key={fld}>{fld}</p>
+                </template>
+            </div>
+
+            <template if:true={records.length}>
+                <lightning-datatable
+                    key-field="id"
+                    data={records}
+                    columns={columns}>
+                </lightning-datatable>
+            </template>
+        </template>
+    </lightning-card>
+</template>

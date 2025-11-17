@@ -1,0 +1,27 @@
+.rowBox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+/* Rectangle input style */
+.custom-input {
+    border: 1.5px solid #1B4F72;
+    padding: 10px 12px;
+    border-radius: 6px;
+    min-width: 220px;
+    background: white;
+    cursor: pointer;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+}
+
+.custom-input:hover {
+    background: #f4f6f9;
+}
+
+.placeholder {
+    color: #A6ACAF;
+}
