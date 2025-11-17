@@ -65,7 +65,7 @@ public with sharing class ObjectSearchController {
                 try {
                     value = currentObj.get(part);
                 } catch (Exception e) {
-                    System.debug('Failed at final: ' + part + ' → ' + e.getMessage());
+                    //System.debug('Failed at final: ' + part + ' → ' + e.getMessage());
                     return null;
                 }
                 return value;
@@ -74,7 +74,7 @@ public with sharing class ObjectSearchController {
             try {
                 currentObj = currentObj.getSObject(part);
             } catch (Exception e) {
-                System.debug('Relationship missing: ' + part + ' → ' + e.getMessage());
+                //System.debug('Relationship missing: ' + part + ' → ' + e.getMessage());
                 return null;
             }
 

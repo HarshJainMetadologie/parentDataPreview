@@ -92,7 +92,7 @@ export default class ObjectSearch extends LightningElement {
 
         const child = this.template.querySelector('c-field-popup');
         if (child && typeof child.openPopup === 'function') {
-            child.objectName = this.selectedObject; // set api
+            child.objectName = this.selectedObject; 
             child.openPopup(); 
         } else {
             this.showPopup = true;
