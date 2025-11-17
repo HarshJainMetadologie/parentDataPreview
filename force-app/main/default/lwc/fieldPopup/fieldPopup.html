@@ -1,4 +1,52 @@
 <template>
+    <template if:true={visible}>
+        <div class="popup-backdrop" onclick={close}></div>
+
+        <div class="popup-shell" onclick={stopPropagation}>
+            <div class="panels-row">
+                <template for:each={panels} for:item="p">
+                    <div key={p.id} class="panel">
+                        <div class="panel-header">{p.objectName}</div>
+                        <div class="panel-list">
+                            <template if:true={p.fields.length}>
+                                <template for:each={p.fields} for:item="f">
+                                    <div class="field-row" key={f.fullName}>
+                                        <span class="field-text"
+                                              data-full={f.fullName}
+                                              onclick={selectField}>
+                                            {f.label} ({f.name})
+                                        </span>
+
+                                        <template if:true={f.isLookup}>
+                                            <button class="expand-btn"
+                                                    data-target={f.targetObject}
+                                                    data-prefix={f.nextPrefix}
+                                                    onclick={expand}>
+                                                &gt;
+                                            </button>
+                                        </template>
+                                    </div>
+                                </template>
+                            </template>
+
+                            <template if:false={p.fields.length}>
+                                <div class="no-fields">No fields</div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="panel-actions">
+                <button class="close-btn" onclick={close}>Close</button>
+            </div>
+        </div>
+    </template>
+</template>
+
+
+
+<!-- <template>
     <template if:true={showPopup}>
 
         <div class="popup-backdrop" onclick={close}></div>
@@ -39,4 +87,4 @@
         </div>
 
     </template>
-</template>
+</template> -->
