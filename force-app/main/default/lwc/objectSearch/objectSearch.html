@@ -24,7 +24,21 @@
     </div>
 
     <template if:true={selectedObject}>
+            <div>
+                <lightning-button 
+                    label="Parent" 
+                    data-mode="parent"
+                    onclick={setMode}>
+                </lightning-button>
 
+                <lightning-button 
+                    label="Child" 
+                    data-mode="child"
+                    onclick={setMode}
+                    class="slds-m-left_small">
+                </lightning-button>
+        </div>
+        <template if:true={mode}>
         <div class="fields-area">
             <template for:each={inputBoxes} for:item="box">
                 <div key={box.id} class="input-row">
@@ -71,5 +85,5 @@
             onclosepopup={closePopup}>
         </c-field-popup>
     </template> -->
-
+    </template>
 </template>

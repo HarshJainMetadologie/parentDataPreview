@@ -1,4 +1,5 @@
 public with sharing class ObjectSearchController {
+
     @AuraEnabled(cacheable=true)
     public static List<String> getObjects() {
         Map<String, Schema.SObjectType> g = Schema.getGlobalDescribe();
@@ -10,13 +11,57 @@ public with sharing class ObjectSearchController {
     @AuraEnabled(cacheable=true)
     public static List<String> getFields(String objectName) {
         if (String.isBlank(objectName)) return new List<String>();
+
         Schema.SObjectType t = Schema.getGlobalDescribe().get(objectName);
         if (t == null) return new List<String>();
 
         Map<String, Schema.SObjectField> m = t.getDescribe().fields.getMap();
+
         List<String> out = new List<String>(m.keySet());
         out.sort();
         return out;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> getFieldsWithRelationships(String objectName) {
+
+        List<Map<String, Object>> output = new List<Map<String, Object>>();
+
+        if (String.isBlank(objectName)) return output;
+
+        Schema.SObjectType typeObj = Schema.getGlobalDescribe().get(objectName);
+        if (typeObj == null) return output;
+
+        Map<String, Schema.SObjectField> fields = typeObj.getDescribe().fields.getMap();
+
+        for (String name : fields.keySet()) {
+
+            Schema.DescribeFieldResult d = fields.get(name).getDescribe();
+            Map<String, Object> row = new Map<String, Object>();
+
+            row.put('name', name);
+            row.put('label', d.getLabel());
+            row.put('isLookup', d.getType() == Schema.DisplayType.Reference);
+
+            List<String> refs = new List<String>();
+
+            if (d.getType() == Schema.DisplayType.Reference) {
+                for (Schema.SObjectType ref : d.getReferenceTo()) {
+                    refs.add(ref.getDescribe().getName());
+                }
+            }
+
+            row.put('referenceObjects', refs);
+
+            output.add(row);
+        }
+
+        return output;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> getChildObjectFields(String objectName) {
+        return getFieldsWithRelationships(objectName);
     }
 
 
@@ -27,95 +72,185 @@ public with sharing class ObjectSearchController {
             return new List<Map<String, Object>>();
         }
 
-        String soql = 'SELECT ' + String.join(fields, ',') +' FROM ' + objectName;
-        List<SObject> records = Database.query(soql);
-        List<Map<String, Object>> response = new List<Map<String, Object>>();
+        String soql = 'SELECT ' + String.join(fields, ',') + ' FROM ' + objectName;
+        System.debug('FINAL SOQL = ' + soql);
 
-        for (SObject s : records) {
+        List<SObject> records = Database.query(soql);
+
+        List<Map<String, Object>> finalOutput = new List<Map<String, Object>>();
+
+        for (SObject rowRecord : records) {
             Map<String, Object> row = new Map<String, Object>();
 
-            for (String f : fields) {
-                Object val = extractFieldValue(s, f);
-                if (val == null) val = '—';
-                row.put(f, val);
+            for (String fieldPath : fields) {
+                Object value = extractValue(rowRecord, fieldPath);
+                if (value == null) value = '—';
+                row.put(fieldPath, value);
             }
-            response.add(row);
+
+            finalOutput.add(row);
         }
 
-        return response;
+        return finalOutput;
     }
 
 
-    private static Object extractFieldValue(SObject record, String fieldPath) {
+    private static Object extractValue(SObject record, String fieldPath) {
 
         if (record == null || String.isBlank(fieldPath)) return null;
 
-        String[] parts = fieldPath.split('\\.');
-        SObject currentObj = record;
-        Object value;
+        List<String> parts = fieldPath.split('\\.');
+        return extractRecursive(record, parts, 0);
+    }
 
-        for (Integer i = 0; i < parts.size(); i++) {
+    private static Object extractRecursive(SObject currentObj, List<String> parts, Integer idx) {
 
-            String part = parts[i];
+        if (currentObj == null) return null;
 
-            if (i == parts.size() - 1) {
-                try {
-                    value = currentObj.get(part);
-                } catch (Exception e) {
-                    return null;
-                }
-                return value;
-            }
+        String key = parts[idx];
 
+        if (idx == parts.size() - 1) {
             try {
-                currentObj = currentObj.getSObject(part);
+                return currentObj.get(key);
             } catch (Exception e) {
                 return null;
             }
-
-            if (currentObj == null) return null;
         }
 
-        return null;
-    }
+        SObject nextObj;
 
-    @AuraEnabled(cacheable=true)
-    public static List<Map<String, Object>> getFieldsWithRelationships(String objectName) {
-
-        List<Map<String, Object>> out = new List<Map<String, Object>>();
-        if (String.isBlank(objectName)) return out;
-
-        Schema.SObjectType t = Schema.getGlobalDescribe().get(objectName);
-        if (t == null) return out;
-
-        Map<String, Schema.SObjectField> fields = t.getDescribe().fields.getMap();
-
-        for (String name : fields.keySet()) {
-
-            Schema.DescribeFieldResult d = fields.get(name).getDescribe();
-            Map<String, Object> fieldData = new Map<String, Object>();
-
-            fieldData.put('name', name);
-            fieldData.put('label', d.getLabel());
-            fieldData.put('type', d.getType().name());
-            fieldData.put('isLookup', d.getType() == Schema.DisplayType.Reference);
-
-            List<String> refs = new List<String>();
-            if (d.getType() == Schema.DisplayType.Reference) {
-                for (Schema.SObjectType r : d.getReferenceTo()) {
-                    refs.add(r.getDescribe().getName());
-                }
-            }
-
-            fieldData.put('referenceObjects', refs);
-            out.add(fieldData);
+        try {
+            nextObj = currentObj.getSObject(key);
+        } catch (Exception e) {
+            return null;
         }
 
-        return out;
+        return extractRecursive(nextObj, parts, idx + 1);
     }
 
-    @AuraEnabled(cacheable=true)
-    public static List<Map<String, Object>> getChildObjectFields(String objectName) {
-        return getFieldsWithRelationships(objectName);
-    }
 }
+
+
+
+
+// public with sharing class ObjectSearchController {
+//     @AuraEnabled(cacheable=true)
+//     public static List<String> getObjects() {
+//         Map<String, Schema.SObjectType> g = Schema.getGlobalDescribe();
+//         List<String> names = new List<String>(g.keySet());
+//         names.sort();
+//         return names;
+//     }
+
+//     @AuraEnabled(cacheable=true)
+//     public static List<String> getFields(String objectName) {
+//         if (String.isBlank(objectName)) return new List<String>();
+//         Schema.SObjectType t = Schema.getGlobalDescribe().get(objectName);
+//         if (t == null) return new List<String>();
+
+//         Map<String, Schema.SObjectField> m = t.getDescribe().fields.getMap();
+//         List<String> out = new List<String>(m.keySet());
+//         out.sort();
+//         return out;
+//     }
+
+
+//     @AuraEnabled(cacheable=true)
+//     public static List<Map<String, Object>> getPreviewData(String objectName, List<String> fields) {
+
+//         if (String.isBlank(objectName) || fields == null || fields.isEmpty()) {
+//             return new List<Map<String, Object>>();
+//         }
+
+//         String soql = 'SELECT ' + String.join(fields, ',') +' FROM ' + objectName;
+//         List<SObject> records = Database.query(soql);
+//         List<Map<String, Object>> response = new List<Map<String, Object>>();
+
+//         for (SObject s : records) {
+//             Map<String, Object> row = new Map<String, Object>();
+
+//             for (String f : fields) {
+//                 Object val = extractFieldValue(s, f);
+//                 if (val == null) val = '—';
+//                 row.put(f, val);
+//             }
+//             response.add(row);
+//         }
+
+//         return response;
+//     }
+
+
+//     private static Object extractFieldValue(SObject record, String fieldPath) {
+
+//         if (record == null || String.isBlank(fieldPath)) return null;
+
+//         String[] parts = fieldPath.split('\\.');
+//         SObject currentObj = record;
+//         Object value;
+
+//         for (Integer i = 0; i < parts.size(); i++) {
+
+//             String part = parts[i];
+
+//             if (i == parts.size() - 1) {
+//                 try {
+//                     value = currentObj.get(part);
+//                 } catch (Exception e) {
+//                     return null;
+//                 }
+//                 return value;
+//             }
+
+//             try {
+//                 currentObj = currentObj.getSObject(part);
+//             } catch (Exception e) {
+//                 return null;
+//             }
+
+//             if (currentObj == null) return null;
+//         }
+
+//         return null;
+//     }
+
+//     @AuraEnabled(cacheable=true)
+//     public static List<Map<String, Object>> getFieldsWithRelationships(String objectName) {
+
+//         List<Map<String, Object>> out = new List<Map<String, Object>>();
+//         if (String.isBlank(objectName)) return out;
+
+//         Schema.SObjectType t = Schema.getGlobalDescribe().get(objectName);
+//         if (t == null) return out;
+
+//         Map<String, Schema.SObjectField> fields = t.getDescribe().fields.getMap();
+
+//         for (String name : fields.keySet()) {
+
+//             Schema.DescribeFieldResult d = fields.get(name).getDescribe();
+//             Map<String, Object> fieldData = new Map<String, Object>();
+
+//             fieldData.put('name', name);
+//             fieldData.put('label', d.getLabel());
+//             fieldData.put('type', d.getType().name());
+//             fieldData.put('isLookup', d.getType() == Schema.DisplayType.Reference);
+
+//             List<String> refs = new List<String>();
+//             if (d.getType() == Schema.DisplayType.Reference) {
+//                 for (Schema.SObjectType r : d.getReferenceTo()) {
+//                     refs.add(r.getDescribe().getName());
+//                 }
+//             }
+
+//             fieldData.put('referenceObjects', refs);
+//             out.add(fieldData);
+//         }
+
+//         return out;
+//     }
+
+//     @AuraEnabled(cacheable=true)
+//     public static List<Map<String, Object>> getChildObjectFields(String objectName) {
+//         return getFieldsWithRelationships(objectName);
+//     }
+// }
