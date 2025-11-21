@@ -1,4 +1,127 @@
 <template>
+
+    <div class="container" onclick={stopPropagation}>
+
+        <lightning-input
+            type="text"
+            label="Search Object"
+            placeholder="Type to search object..."
+            value={searchKey}
+            onkeyup={handleTyping}
+            onclick={openList}>
+        </lightning-input>
+
+        <template if:true={showList}>
+            <div class="list-container" onclick={stopPropagation}>
+                <template for:each={filteredObjects} for:item="obj">
+                    <div key={obj}
+                         class="list-item"
+                         data-name={obj}
+                         onclick={selectObject}>
+                        {obj}
+                    </div>
+                </template>
+            </div>
+        </template>
+
+    </div>
+
+
+    <template if:true={selectedObject}>
+
+        <div class="slds-m-top_small">
+
+            <template if:true={modeIsNotChild}>
+                <lightning-button 
+                    label="Parent"
+                    data-mode="parent"
+                    onclick={setMode}>
+                </lightning-button>
+            </template>
+
+            <template if:true={modeIsNotParent}>
+                <lightning-button 
+                    label="Child"
+                    data-mode="child"
+                    onclick={setMode}
+                    class="slds-m-left_small">
+                </lightning-button>
+            </template>
+
+        </div>
+
+
+        <template if:true={mode}>
+
+            <div class="fields-area">
+
+                <template for:each={inputBoxes} for:item="box">
+                    <div key={box.id} class="input-row">
+
+                        <div data-id={box.id} onclick={openPopup}>
+                            <lightning-input
+                                label="Select Field"
+                                value={box.value}>
+                            </lightning-input>
+                        </div>
+
+                        <button class="plus"
+                                data-id={box.id}
+                                onclick={addBox}>+</button>
+
+                        <button class="minus"
+                                data-id={box.id}
+                                onclick={removeBox}>-</button>
+
+                    </div>
+                </template>
+
+            </div>
+
+
+            <div class="actions">
+                <lightning-button 
+                    label="Preview"
+                    onclick={preview}>
+                </lightning-button>
+
+                <lightning-button 
+                    label="Clear Preview"
+                    variant="neutral"
+                    onclick={clearPreview}
+                    class="slds-m-left_small">
+                </lightning-button>
+            </div>
+
+
+            <template if:true={showPreview}>
+                <lightning-datatable 
+                    key-field="id"
+                    data={previewData}
+                    columns={previewColumns}>
+                </lightning-datatable>
+            </template>
+
+        </template>
+
+    </template>
+
+
+    <template if:true={showPopup}>
+        <c-field-popup
+            object-name={selectedObject}
+            mode={mode}
+            onfieldselect={handleFieldSelect}
+            onclosepopup={closePopup}>
+        </c-field-popup>
+    </template>
+
+</template>
+
+
+
+
+<!-- <template>
     <div class="container" onclick={stopPropagation}>
 
         <lightning-input
@@ -77,7 +200,12 @@
         onclosepopup={closePopup}>
     </c-field-popup>
 
-   <!-- <template if:true={showPopup}>
+   
+    </template>
+</template> -->
+
+
+<!-- <template if:true={showPopup}>
         <c-field-popup 
             show-popup={showPopup}
             object-name={selectedObject}
@@ -85,5 +213,3 @@
             onclosepopup={closePopup}>
         </c-field-popup>
     </template> -->
-    </template>
-</template>

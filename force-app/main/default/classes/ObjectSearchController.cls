@@ -2,8 +2,7 @@ public with sharing class ObjectSearchController {
 
     @AuraEnabled(cacheable=true)
     public static List<String> getObjects() {
-        Map<String, Schema.SObjectType> g = Schema.getGlobalDescribe();
-        List<String> names = new List<String>(g.keySet());
+        List<String> names = new List<String>(Schema.getGlobalDescribe().keySet());
         names.sort();
         return names;
     }
@@ -15,55 +14,63 @@ public with sharing class ObjectSearchController {
         Schema.SObjectType t = Schema.getGlobalDescribe().get(objectName);
         if (t == null) return new List<String>();
 
-        Map<String, Schema.SObjectField> m = t.getDescribe().fields.getMap();
-
-        List<String> out = new List<String>(m.keySet());
-        out.sort();
-        return out;
+        List<String> listFields = new List<String>(t.getDescribe().fields.getMap().keySet());
+        listFields.sort();
+        return listFields;
     }
 
     @AuraEnabled(cacheable=true)
     public static List<Map<String, Object>> getFieldsWithRelationships(String objectName) {
 
         List<Map<String, Object>> output = new List<Map<String, Object>>();
-
         if (String.isBlank(objectName)) return output;
 
-        Schema.SObjectType typeObj = Schema.getGlobalDescribe().get(objectName);
-        if (typeObj == null) return output;
+        Schema.SObjectType obj = Schema.getGlobalDescribe().get(objectName);
+        if (obj == null) return output;
 
-        Map<String, Schema.SObjectField> fields = typeObj.getDescribe().fields.getMap();
+        Map<String, Schema.SObjectField> fields = obj.getDescribe().fields.getMap();
 
-        for (String name : fields.keySet()) {
+        for (String fName : fields.keySet()) {
 
-            Schema.DescribeFieldResult d = fields.get(name).getDescribe();
+            Schema.DescribeFieldResult d = fields.get(fName).getDescribe();
+
             Map<String, Object> row = new Map<String, Object>();
-
-            row.put('name', name);
+            row.put('name', fName);
             row.put('label', d.getLabel());
             row.put('isLookup', d.getType() == Schema.DisplayType.Reference);
+            row.put('isChild', false);
 
             List<String> refs = new List<String>();
-
             if (d.getType() == Schema.DisplayType.Reference) {
-                for (Schema.SObjectType ref : d.getReferenceTo()) {
-                    refs.add(ref.getDescribe().getName());
+                for (Schema.SObjectType r : d.getReferenceTo()) {
+                    refs.add(r.getDescribe().getName());
                 }
             }
-
             row.put('referenceObjects', refs);
+
+            output.add(row);
+        }
+
+        for (Schema.ChildRelationship cr : obj.getDescribe().getChildRelationships()) {
+
+            if (String.isBlank(cr.getRelationshipName())) continue;
+
+            Map<String, Object> row = new Map<String, Object>();
+
+            row.put('name', cr.getRelationshipName());
+            row.put('label', cr.getRelationshipName());
+            row.put('isLookup', false);
+            row.put('isChild', true);
+
+            row.put('referenceObjects', new List<String>{
+                cr.getChildSObject().getDescribe().getName()
+            });
 
             output.add(row);
         }
 
         return output;
     }
-
-    @AuraEnabled(cacheable=true)
-    public static List<Map<String, Object>> getChildObjectFields(String objectName) {
-        return getFieldsWithRelationships(objectName);
-    }
-
 
     @AuraEnabled(cacheable=true)
     public static List<Map<String, Object>> getPreviewData(String objectName, List<String> fields) {
@@ -73,62 +80,82 @@ public with sharing class ObjectSearchController {
         }
 
         String soql = 'SELECT ' + String.join(fields, ',') + ' FROM ' + objectName;
-        System.debug('FINAL SOQL = ' + soql);
+        System.debug('RUNNING SOQL = ' + soql);
 
-        List<SObject> records = Database.query(soql);
+        List<SObject> listRecords = Database.query(soql);
+        List<Map<String, Object>> result = new List<Map<String, Object>>();
 
-        List<Map<String, Object>> finalOutput = new List<Map<String, Object>>();
-
-        for (SObject rowRecord : records) {
+        for (SObject rec : listRecords) {
             Map<String, Object> row = new Map<String, Object>();
 
-            for (String fieldPath : fields) {
-                Object value = extractValue(rowRecord, fieldPath);
-                if (value == null) value = '—';
-                row.put(fieldPath, value);
+            for (String f : fields) {
+                Object val = extractFieldValue(rec, f);
+                row.put(f, val == null ? '—' : val);
             }
-
-            finalOutput.add(row);
+            result.add(row);
         }
 
-        return finalOutput;
+        return result;
     }
 
+    private static Object extractFieldValue(SObject rec, String path) {
 
-    private static Object extractValue(SObject record, String fieldPath) {
+        List<String> parts = path.split('\\.');
+        Object current = rec;
 
-        if (record == null || String.isBlank(fieldPath)) return null;
+        for (Integer i = 0; i < parts.size(); i++) {
 
-        List<String> parts = fieldPath.split('\\.');
-        return extractRecursive(record, parts, 0);
-    }
+            String key = parts[i];
 
-    private static Object extractRecursive(SObject currentObj, List<String> parts, Integer idx) {
+            if (i == parts.size() - 1) {
 
-        if (currentObj == null) return null;
+                if (current instanceof List<SObject>) {
+                    List<SObject> lst = (List<SObject>) current;
+                    List<String> finalVals = new List<String>();
 
-        String key = parts[idx];
+                    for (SObject child : lst) {
+                        Object val = child.get(key);
+                        if (val != null) finalVals.add(String.valueOf(val));
+                    }
 
-        if (idx == parts.size() - 1) {
+                    return finalVals.size() > 0 ? String.join(finalVals, ', ') : null;
+                }
+
+                try {
+                    return ((SObject) current).get(key);
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+
             try {
-                return currentObj.get(key);
+                Object nextObj = null;
+
+                try {
+                    nextObj = ((SObject) current).getSObject(key);
+                } catch (Exception e) {}
+
+                if (nextObj == null) {
+                    Object possibleList = ((SObject) current).get(key);
+                    if (possibleList instanceof List<SObject>) {
+                        nextObj = possibleList;
+                    }
+                }
+
+                if (nextObj == null) return null;
+                current = nextObj;
+
             } catch (Exception e) {
                 return null;
             }
         }
 
-        SObject nextObj;
-
-        try {
-            nextObj = currentObj.getSObject(key);
-        } catch (Exception e) {
-            return null;
-        }
-
-        return extractRecursive(nextObj, parts, idx + 1);
+        return null;
     }
 
 }
+
+
 
 
 
