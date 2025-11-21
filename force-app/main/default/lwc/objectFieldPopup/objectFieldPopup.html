@@ -1,0 +1,28 @@
+<template>
+    <div class="backdrop" onmousedown={closePopup}></div>
+
+    <div class="popup" onmousedown={stopProp} onclick={stopProp}>
+        <div class="header">
+            <span>Select Field ({objectName})</span>
+            <button class="close" onclick={closePopup}>×</button>
+        </div>
+
+        <div class="button-group">
+            <button class={allBtnClass} data-mode="all" onclick={changeMode}>All</button>
+            <button class={parentBtnClass} data-mode="parent" onclick={changeMode}>Parent</button>
+            <button class={childBtnClass} data-mode="child" onclick={changeMode}>Child</button>
+        </div>
+
+        <div class="field-list">
+            <template for:each={displayFields} for:item="fld">
+                <div key={fld}
+                    class="field-item"
+                    data-name={fld}
+                    onclick={chooseField}>
+                    {fld}
+                </div>
+            </template>
+        </div>
+    </div>
+</template>
+<!-- //===== -->

@@ -1,0 +1,73 @@
+.search-box {
+    position: relative;
+    width: 25%;
+}
+
+.input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #dce1e5;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.dropdown {
+    position: absolute;
+    background: white;
+    width: 100%;
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid #dce1e5;
+    border-radius: 6px;
+    margin-top: 4px;
+    z-index: 100;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+}
+
+.list-item {
+    padding: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.field-section {
+    width: 25%;
+    margin-top: 20px;
+    background: #f9fafb;
+    padding: 16px;
+    border-radius: 10px;
+}
+
+.field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.dynamic-input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #d0d3d8;
+}
+
+.btn {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 34px;
+}
+
+.add {
+    background: #4caf50;
+    color: white;
+}
+
+.remove {
+    background: #e53935;
+    color: white;
+}

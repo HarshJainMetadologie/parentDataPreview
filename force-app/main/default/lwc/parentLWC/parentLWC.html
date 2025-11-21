@@ -1,0 +1,58 @@
+<template>
+    <div class="search-box">
+        <input type="text"
+               class="input"
+               placeholder="Search Object..."
+               value={searchKey}
+               oninput={handleInput}
+               onblur={handleBlur}
+               onclick={openList}/>
+
+        <template if:true={showList}>
+            <ul class="dropdown">
+                <template for:each={filteredObjects} for:item="obj">
+                    <li key={obj}
+                        data-name={obj}
+                        class="list-item"
+                        onclick={selectObject}>
+                        {obj}
+                    </li>
+                </template>
+            </ul>
+        </template>
+    </div>
+
+    <template if:true={selectedObject}>
+        <div class="field-section">
+            <template for:each={inputFields} for:item="field">
+                <div key={field.id} class="field-row">
+
+                    <!-- bind the input value to field.value -->
+                    <input type="text"
+                        class="dynamic-input"
+                        placeholder="Enter field value..."
+                        data-id={field.id}
+                        value={field.value}
+                        onclick={openPopup}
+                        oninput={handleFieldChange}/>
+
+                    <button class="btn add" data-id={field.id} onclick={addField}>+</button>
+
+                    <template if:true={field.showRemove}>
+                        <button class="btn remove" data-id={field.id} onclick={removeField}>-</button>
+                    </template>
+
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <template if:true={showPopup}>
+        <c-object-field-popup
+            object-name={selectedObject}
+            onfieldselect={handleFieldSelected}
+            onclosepopup={closePopup}>
+        </c-object-field-popup>
+    </template>
+</template>
+<!-- //====== -->

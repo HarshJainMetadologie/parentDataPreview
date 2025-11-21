@@ -1,0 +1,79 @@
+.backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 98;
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.25);
+    z-index: 99;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 16px;
+}
+
+.close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    justify-content: center;
+}
+
+.btn {
+    padding: 6px 14px;
+    border: 1px solid #bfc4c9;
+    border-radius: 6px;
+    background: #f4f6f9;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: #e5e8ea;
+}
+
+.btn.active {
+    background: #1e90ff;
+    color: white;
+    border-color: #1e90ff;
+}
+
+.field-list {
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.field-item {
+    padding: 8px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #f4f6f9;
+}
+
+.field-item:hover {
+    background: #e3e8ed;
+}
