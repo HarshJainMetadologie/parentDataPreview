@@ -199,7 +199,6 @@ public static List<Map<String, Object>> previewRecords(String objectName, List<S
         Map<String, Object> row = new Map<String, Object>();
 
         for (String sel : parentSelects) {
-
             if (!sel.contains('.')) {
                 row.put(sel, sobj.get(sel));
                 continue;
@@ -213,10 +212,10 @@ public static List<Map<String, Object>> previewRecords(String objectName, List<S
                 if (current == null) break;
             }
 
-            Object val = (current != null) ? current.get(parts[parts.size() - 1]) : null;
+            Object value = (current != null) ? current.get(parts[parts.size()-1]) : null;
 
-            String key = sel.replace('.', '_');
-            row.put(key, val);
+            row.put(sel.replace('.', '_'), value);
+
         }
 
         for (String relName : childMap.keySet()) {

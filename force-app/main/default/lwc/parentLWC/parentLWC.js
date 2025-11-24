@@ -62,61 +62,82 @@ export default class ParentLWC extends LightningElement {
         if (Array.isArray(current)) return current;
         return [current];
     }
-
+    
     runPreview() {
-    const selectedFields = this.inputFields
-        .map(f => f.value)
-        .filter(v => v && v.trim());
+        const selectedFields = this.inputFields
+            .map(f => f.value)
+            .filter(v => v && v.trim());
 
-    if (!selectedFields.length) {
-        this.records = [];
-        this.columns = [];
-        return;
-    }
+        if (!selectedFields.length) {
+            this.records = [];
+            this.columns = [];
+            return;
+        }
 
-    previewRecords({
-        objectName: this.selectedObject,
-        fields: selectedFields
-    })
-    .then(result => {
+        previewRecords({
+            objectName: this.selectedObject,
+            fields: selectedFields
+        })
+        .then(result => {
 
-        console.log("RAW APEX RESULT → ", JSON.parse(JSON.stringify(result)));
+            console.log('RAW APEX RESULT → ', JSON.parse(JSON.stringify(result)));
 
-        this.columns = selectedFields.map(f => ({
-            label: f,
-            fieldName: f.replace(/\./g, "_"),
-            type: "text"
-        }));
+            this.columns = selectedFields.map(f => ({
+                label: f,
+                fieldName: f.replace(/\./g, '_'),
+                type: 'text'
+            }));
 
-        let finalRows = [];
+            const finalRows = [];
 
-        result.forEach(rowObj => {
-            let flatRow = {};
+            result.forEach(rowObj => {
+                const flatRow = {};
 
-            selectedFields.forEach(field => {
-                const key = field.replace(/\./g, "_");
-                const parts = field.split(".");
+                selectedFields.forEach(f => {
+                    const flatKey = f.replace(/\./g, '_');
 
-                const values = this.getValuesForPath(rowObj, parts);
+                    let value = null;
 
-                flatRow[key] = values[0] ?? null;
+                    if (Object.prototype.hasOwnProperty.call(rowObj, flatKey)) {
+                        value = rowObj[flatKey];
+                    } else {
+                        const parts = f.split('.');
+                        const first = parts[0];
+
+                        if (Array.isArray(rowObj[first]) && rowObj[first].length > 0) {
+                            const child = rowObj[first][0];
+
+                            const remainder = parts.slice(1).join('.');
+                            const childFlatKey = remainder.replace(/\./g, '_');
+
+                            if (child && Object.prototype.hasOwnProperty.call(child, childFlatKey)) {
+                                value = child[childFlatKey];
+                            } else if (child && Object.prototype.hasOwnProperty.call(child, remainder)) {
+                                value = child[remainder];
+                            } else {
+                                value = null;
+                            }
+                        } else {
+                            value = null;
+                        }
+                    }
+
+                    flatRow[flatKey] = value;
+                });
+
+                finalRows.push(flatRow);
             });
 
-            finalRows.push(flatRow);
+            console.log('FINAL FLATTENED ROWS → ', JSON.parse(JSON.stringify(finalRows)));
+
+            this.records = finalRows;
+        })
+        .catch(err => {
+            console.error("ERROR in previewRecords() →", err);
+            this.records = [];
+            this.columns = [];
         });
-
-        console.log("FINAL FLATTENED ROWS → ", JSON.parse(JSON.stringify(finalRows)));
-
-        this.records = finalRows;
-    })
-    .catch(err => {
-        console.error("ERROR in previewRecords() → ", err);
-        this.records = [];
-        this.columns = [];
-    });
-}
-
-
+    }
 
     openPopup(event) {
         const idRaw = event.currentTarget && event.currentTarget.dataset
