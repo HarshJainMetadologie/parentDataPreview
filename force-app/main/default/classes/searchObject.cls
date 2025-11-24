@@ -121,119 +121,119 @@ public with sharing class searchObject {
     }
 
     @AuraEnabled
-public static List<Map<String, Object>> previewRecords(String objectName, List<String> fields) {
-    if (String.isBlank(objectName) || fields == null || fields.isEmpty()) {
-        return new List<Map<String, Object>>();
-    }
-
-    Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
-    if (!gd.containsKey(objectName)) return new List<Map<String, Object>>();
-
-    Schema.DescribeSObjectResult rootDsr = gd.get(objectName).getDescribe();
-
-    Map<String, String> parentLookupMap = new Map<String, String>();
-    for (Schema.SObjectField f : rootDsr.fields.getMap().values()) {
-        Schema.DescribeFieldResult fd = f.getDescribe();
-        if (fd.getType() == Schema.DisplayType.REFERENCE) {
-            String api = fd.getName();
-            String relName = api.endsWith('Id') ? api.substring(0, api.length()-2) : api;
-            parentLookupMap.put(relName, api);
+    public static List<Map<String, Object>> previewRecords(String objectName, List<String> fields) {
+        if (String.isBlank(objectName) || fields == null || fields.isEmpty()) {
+            return new List<Map<String, Object>>();
         }
-    }
 
-    Set<String> rootChildSet = new Set<String>();
-    for (Schema.ChildRelationship cr : rootDsr.getChildRelationships()) {
-        if (cr.getRelationshipName() != null) rootChildSet.add(cr.getRelationshipName());
-    }
+        Map<String, Schema.SObjectType> gd = Schema.getGlobalDescribe();
+        if (!gd.containsKey(objectName)) return new List<Map<String, Object>>();
 
-    List<String> parentSelects = new List<String>();
-    Map<String, List<String>> childMap = new Map<String, List<String>>();
+        Schema.DescribeSObjectResult rootDsr = gd.get(objectName).getDescribe();
 
-    for (String full : fields) {
-        if (!full.contains('.')) {
-            parentSelects.add(full);
-            continue;
-        }
-        List<String> parts = full.split('\\.');
-        String first = parts[0];
-
-        if (parentLookupMap.containsKey(first)) {
-            parentSelects.add(full);
-        } else if (rootChildSet.contains(first)) {
-            if (parts.size() > 1) {
-                List<String> tmp = new List<String>();
-                for (Integer i = 1; i < parts.size(); i++) tmp.add(parts[i]);
-                String remainder = String.join(tmp, '.');
-
-                if (String.isNotBlank(remainder)) {
-                    if (!childMap.containsKey(first)) childMap.put(first, new List<String>());
-                    childMap.get(first).add(remainder);
-                }
+        Map<String, String> parentLookupMap = new Map<String, String>();
+        for (Schema.SObjectField f : rootDsr.fields.getMap().values()) {
+            Schema.DescribeFieldResult fd = f.getDescribe();
+            if (fd.getType() == Schema.DisplayType.REFERENCE) {
+                String api = fd.getName();
+                String relName = api.endsWith('Id') ? api.substring(0, api.length()-2) : api;
+                parentLookupMap.put(relName, api);
             }
-        } else {
-            parentSelects.add(full);
         }
-    }
 
-    String selectClause = parentSelects.isEmpty() ? 'Id' : String.join(parentSelects, ',');
+        Set<String> rootChildSet = new Set<String>();
+        for (Schema.ChildRelationship cr : rootDsr.getChildRelationships()) {
+            if (cr.getRelationshipName() != null) rootChildSet.add(cr.getRelationshipName());
+        }
 
-    for (String rel : childMap.keySet()) {
-        List<String> chFields = childMap.get(rel);
-        String sub = buildChildSubquery(objectName, rel, chFields, 1);
-        selectClause += ', ' + sub;
-    }
+        List<String> parentSelects = new List<String>();
+        Map<String, List<String>> childMap = new Map<String, List<String>>();
 
-    String soql = 'SELECT ' + selectClause + ' FROM ' + objectName;
-    System.debug('FINAL SOQL => ' + soql);
-
-    List<SObject> records;
-    try {
-        records = Database.query(soql);
-    } catch (Exception e) {
-        throw new AuraHandledException('Preview query failed: ' + e.getMessage());
-    }
-
-    List<Map<String, Object>> out = new List<Map<String, Object>>();
-
-    for (SObject sobj : records) {
-        Map<String, Object> row = new Map<String, Object>();
-
-        for (String sel : parentSelects) {
-            if (!sel.contains('.')) {
-                row.put(sel, sobj.get(sel));
+        for (String full : fields) {
+            if (!full.contains('.')) {
+                parentSelects.add(full);
                 continue;
             }
+            List<String> parts = full.split('\\.');
+            String first = parts[0];
 
-            List<String> parts = sel.split('\\.');
-            SObject current = sobj;
+            if (parentLookupMap.containsKey(first)) {
+                parentSelects.add(full);
+            } else if (rootChildSet.contains(first)) {
+                if (parts.size() > 1) {
+                    List<String> tmp = new List<String>();
+                    for (Integer i = 1; i < parts.size(); i++) tmp.add(parts[i]);
+                    String remainder = String.join(tmp, '.');
 
-            for (Integer i = 0; i < parts.size() - 1; i++) {
-                current = current.getSObject(parts[i]);
-                if (current == null) break;
+                    if (String.isNotBlank(remainder)) {
+                        if (!childMap.containsKey(first)) childMap.put(first, new List<String>());
+                        childMap.get(first).add(remainder);
+                    }
+                }
+            } else {
+                parentSelects.add(full);
             }
-
-            Object value = (current != null) ? current.get(parts[parts.size()-1]) : null;
-
-            row.put(sel.replace('.', '_'), value);
-
         }
 
-        for (String relName : childMap.keySet()) {
-            List<SObject> children = sobj.getSObjects(relName);
-            List<Map<String, Object>> childOut = new List<Map<String, Object>>();
-            if (children != null && !children.isEmpty()) {
-                String childObjectApi = getChildObjectName(objectName, relName);
-                List<String> selChildFields = childMap.get(relName);
-                childOut = buildChildData(children, selChildFields, childObjectApi, 1);
-            }
-            row.put(relName, childOut);
+        String selectClause = parentSelects.isEmpty() ? 'Id' : String.join(parentSelects, ',');
+
+        for (String rel : childMap.keySet()) {
+            List<String> chFields = childMap.get(rel);
+            String sub = buildChildSubquery(objectName, rel, chFields, 1);
+            selectClause += ', ' + sub;
         }
 
-        out.add(row);
+        String soql = 'SELECT ' + selectClause + ' FROM ' + objectName;
+        System.debug('FINAL SOQL => ' + soql);
+
+        List<SObject> records;
+        try {
+            records = Database.query(soql);
+        } catch (Exception e) {
+            throw new AuraHandledException('Preview query failed: ' + e.getMessage());
+        }
+
+        List<Map<String, Object>> out = new List<Map<String, Object>>();
+
+        for (SObject sobj : records) {
+            Map<String, Object> row = new Map<String, Object>();
+
+            for (String sel : parentSelects) {
+                if (!sel.contains('.')) {
+                    row.put(sel, sobj.get(sel));
+                    continue;
+                }
+
+                List<String> parts = sel.split('\\.');
+                SObject current = sobj;
+
+                for (Integer i = 0; i < parts.size() - 1; i++) {
+                    current = current.getSObject(parts[i]);
+                    if (current == null) break;
+                }
+
+                Object value = (current != null) ? current.get(parts[parts.size()-1]) : null;
+
+                row.put(sel.replace('.', '_'), value);
+
+            }
+
+            for (String relName : childMap.keySet()) {
+                List<SObject> children = sobj.getSObjects(relName);
+                List<Map<String, Object>> childOut = new List<Map<String, Object>>();
+                if (children != null && !children.isEmpty()) {
+                    String childObjectApi = getChildObjectName(objectName, relName);
+                    List<String> selChildFields = childMap.get(relName);
+                    childOut = buildChildData(children, selChildFields, childObjectApi, 1);
+                }
+                row.put(relName, childOut);
+            }
+
+            out.add(row);
+        }
+
+        return out;
     }
-
-    return out;
-}
 
 
     private static String buildChildSubquery(String parentObjectApi, String relName, List<String> fieldsForChild, Integer depth) {
