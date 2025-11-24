@@ -1,5 +1,6 @@
 import { LightningElement, wire } from 'lwc';
 import getObjects from '@salesforce/apex/searchObject.getObjects';
+import previewRecords from '@salesforce/apex/searchObject.previewRecords';
 
 export default class ParentLWC extends LightningElement {
     allObjects = [];
@@ -10,6 +11,8 @@ export default class ParentLWC extends LightningElement {
 
     showPopup = false;
     currentFieldId = null;
+    records = [];
+    columns = [];
 
     inputFields = [
         { id: 1, value: '', showRemove: false }
@@ -26,15 +29,100 @@ export default class ParentLWC extends LightningElement {
             console.error('PARENT → getObjects error', error);
         }
     }
+    getValuesForPath(rowObj, parts) {
+        if (!rowObj) return [null];
+
+        const flatKey = parts.join('_');
+        if (rowObj.hasOwnProperty(flatKey)) {
+            return [rowObj[flatKey]];
+        }
+
+        if (parts.length === 1 && rowObj.hasOwnProperty(parts[0])) {
+            return [rowObj[parts[0]]];
+        }
+
+        let current = rowObj;
+        for (let i = 0; i < parts.length; i++) {
+
+            const segment = parts[i];
+
+            if (Array.isArray(current)) {
+                let collected = [];
+                current.forEach(item => {
+                    collected = collected.concat(this.getValuesForPath(item, parts.slice(i)));
+                });
+                return collected.length ? collected : [null];
+            }
+
+            if (!current || typeof current !== "object") return [null];
+
+            current = current[segment];
+        }
+
+        if (Array.isArray(current)) return current;
+        return [current];
+    }
+
+    runPreview() {
+    const selectedFields = this.inputFields
+        .map(f => f.value)
+        .filter(v => v && v.trim());
+
+    if (!selectedFields.length) {
+        this.records = [];
+        this.columns = [];
+        return;
+    }
+
+    previewRecords({
+        objectName: this.selectedObject,
+        fields: selectedFields
+    })
+    .then(result => {
+
+        console.log("RAW APEX RESULT → ", JSON.parse(JSON.stringify(result)));
+
+        this.columns = selectedFields.map(f => ({
+            label: f,
+            fieldName: f.replace(/\./g, "_"),
+            type: "text"
+        }));
+
+        let finalRows = [];
+
+        result.forEach(rowObj => {
+            let flatRow = {};
+
+            selectedFields.forEach(field => {
+                const key = field.replace(/\./g, "_");
+                const parts = field.split(".");
+
+                const values = this.getValuesForPath(rowObj, parts);
+
+                flatRow[key] = values[0] ?? null;
+            });
+
+            finalRows.push(flatRow);
+        });
+
+        console.log("FINAL FLATTENED ROWS → ", JSON.parse(JSON.stringify(finalRows)));
+
+        this.records = finalRows;
+    })
+    .catch(err => {
+        console.error("ERROR in previewRecords() → ", err);
+        this.records = [];
+        this.columns = [];
+    });
+}
+
+
 
     openPopup(event) {
-        console.log('PARENT → openPopup fired');
         const idRaw = event.currentTarget && event.currentTarget.dataset
             ? event.currentTarget.dataset.id
             : undefined;
-        console.log('event.currentTarget.dataset.id:', idRaw);
         this.currentFieldId = parseInt(idRaw, 10);
-        console.log('PARENT → currentFieldId set to:', this.currentFieldId);
         this.showPopup = true;
     }
 
@@ -45,21 +133,13 @@ export default class ParentLWC extends LightningElement {
     }
 
     handleFieldSelected(event) {
-        console.log('PARENT → fieldselect EVENT RECEIVED');
         const selectedField = event.detail;
-        console.log('PARENT → field selected:', selectedField);
-        console.log('PARENT → currentFieldId:', this.currentFieldId);
-
         const updated = this.inputFields.map(f =>
             f.id === this.currentFieldId
                 ? { ...f, value: selectedField }
                 : f
         );
-
-        console.log('PARENT → updated inputFields:', JSON.parse(JSON.stringify(updated)));
-
         this.inputFields = updated;
-
         setTimeout(() => {
             this.showPopup = false;
         }, 0);
@@ -81,6 +161,10 @@ export default class ParentLWC extends LightningElement {
                 { id: 1, value: '', showRemove: false }
             ];
             this.fieldCounter = 1;
+
+            this.records = [];
+            this.columns = [];
+
             return;
         }
 
@@ -98,7 +182,6 @@ export default class ParentLWC extends LightningElement {
     }
 
     selectObject(event) {
-        console.log('PARENT → Object selected:', event.currentTarget.dataset.name);
         this.selectedObject = event.currentTarget.dataset.name;
         this.searchKey = this.selectedObject;
         this.showList = false;
@@ -107,17 +190,19 @@ export default class ParentLWC extends LightningElement {
     handleFieldChange(event) {
         const id = parseInt(event.currentTarget.dataset.id, 10);
         const val = event.target.value;
-        console.log('PARENT → handleFieldChange id:', id, 'value:', val);
         this.inputFields = this.inputFields.map(f =>
             f.id === id ? { ...f, value: val } : f
         );
+
+        const allEmpty = this.inputFields.every(f => !f.value || f.value.trim() === '');
+        if (allEmpty) {
+            this.records = [];
+            this.columns = [];
+        }
     }
 
     addField(event) {
-        console.log('PARENT → addField');
-        console.log('Before:', JSON.parse(JSON.stringify(this.inputFields)));
         this.fieldCounter++;
-
         this.inputFields = [
             ...this.inputFields,
             { id: this.fieldCounter, value: '', showRemove: true }
@@ -128,14 +213,11 @@ export default class ParentLWC extends LightningElement {
                 idx === 0 ? { ...f, showRemove: true } : f
             );
         }
-        console.log('After:', JSON.parse(JSON.stringify(this.inputFields)));
     }
 
     removeField(event) {
         const id = parseInt(event.currentTarget.dataset.id, 10);
-
         this.inputFields = this.inputFields.filter(f => f.id !== id);
-
         if (this.inputFields.length === 1) {
             this.inputFields = this.inputFields.map(f =>
                 ({ ...f, showRemove: false })
@@ -143,4 +225,3 @@ export default class ParentLWC extends LightningElement {
         }
     }
 }
-//---

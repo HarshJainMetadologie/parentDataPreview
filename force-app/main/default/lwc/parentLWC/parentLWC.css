@@ -71,3 +71,21 @@
     background: #e53935;
     color: white;
 }
+
+.preview-container {
+    margin-top: 20px;
+}
+
+.preview-btn {
+    background: #1e90ff;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.preview-btn:hover {
+    background: #187dd8;
+}

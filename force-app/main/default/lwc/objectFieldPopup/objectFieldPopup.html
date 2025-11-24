@@ -1,28 +1,120 @@
 <template>
-    <div class="backdrop" onmousedown={closePopup}></div>
+    <div class="backdrop" onclick={closePopup}></div>
 
-    <div class="popup" onmousedown={stopProp} onclick={stopProp}>
+    <div class="popup" onclick={stopProp}>
         <div class="header">
             <span>Select Field ({objectName})</span>
             <button class="close" onclick={closePopup}>×</button>
         </div>
 
-        <div class="button-group">
-            <button class={allBtnClass} data-mode="all" onclick={changeMode}>All</button>
-            <button class={parentBtnClass} data-mode="parent" onclick={changeMode}>Parent</button>
-            <button class={childBtnClass} data-mode="child" onclick={changeMode}>Child</button>
-        </div>
+        <div class="panels-row">
+            <template for:each={panelsView} for:item="p">
+                <div key={p.idx} class="panel">
 
-        <div class="field-list">
-            <template for:each={displayFields} for:item="fld">
-                <div key={fld}
-                    class="field-item"
-                    data-name={fld}
-                    onclick={chooseField}>
-                    {fld}
+                    <div class="panel-header">
+                        <div class="panel-title">{p.objectName}</div>
+
+                        <input class="panel-search"
+                               type="text"
+                               placeholder="Search fields..."
+                               value={p.search}
+                               data-panel={p.idx}
+                               oninput={onSearchInput} />
+                    </div>
+
+                    <div class="panel-controls">
+                        <button class={p.allBtnClass}
+                                data-panel={p.idx}
+                                data-mode="all"
+                                onclick={changeMode}>
+                            All
+                        </button>
+
+                        <button class={p.parentBtnClass}
+                                data-panel={p.idx}
+                                data-mode="parent"
+                                onclick={changeMode}>
+                            Parent
+                        </button>
+
+                        <button class={p.childBtnClass}
+                                data-panel={p.idx}
+                                data-mode="child"
+                                onclick={changeMode}>
+                            Child
+                        </button>
+                    </div>
+
+                    <template if:true={p.showFields}>
+                        <div class="panel-section">
+                            <div class="section-title">Fields</div>
+                            <div class="section-list">
+                                <template for:each={p.filteredFieldsGroup} for:item="fld">
+                                    <div key={fld.name} class="field-row">
+                                        <div class="field-name"
+                                             data-name={fld.name}
+                                             data-panel={p.idx}
+                                             onclick={chooseField}>
+                                            {fld.name}
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template if:true={p.showParents}>
+                        <div class="panel-section">
+                            <div class="section-title">Parent Relationships</div>
+                            <div class="section-list">
+                                <template for:each={p.filteredParentGroup} for:item="fld">
+                                    <div key={fld.name} class="field-row">
+                                        <div class="field-name"
+                                             data-name={fld.name}
+                                             data-panel={p.idx}
+                                             onclick={chooseField}>
+                                            {fld.name}
+                                        </div>
+
+                                        <button class="expand-btn"
+                                                data-name={fld.name}
+                                                data-panel={p.idx}
+                                                onclick={expandRelation}>
+                                            &gt;
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template if:true={p.showChildren}>
+                        <div class="panel-section">
+                            <div class="section-title">Child Relationships</div>
+                            <div class="section-list">
+                                <template for:each={p.filteredChildGroup} for:item="fld">
+                                    <div key={fld.name} class="field-row">
+                                        <div class="field-name"
+                                             data-name={fld.name}
+                                             data-panel={p.idx}
+                                             onclick={chooseField}>
+                                            {fld.name}
+                                        </div>
+
+                                        <button class="expand-btn"
+                                                data-name={fld.name}
+                                                data-panel={p.idx}
+                                                onclick={expandRelation}>
+                                            &gt;
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
                 </div>
             </template>
         </div>
     </div>
 </template>
-<!-- //===== -->

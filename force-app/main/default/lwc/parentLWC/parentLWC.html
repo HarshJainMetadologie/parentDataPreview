@@ -6,7 +6,7 @@
                value={searchKey}
                oninput={handleInput}
                onblur={handleBlur}
-               onclick={openList}/>
+               onclick={openList} />
 
         <template if:true={showList}>
             <ul class="dropdown">
@@ -24,26 +24,45 @@
 
     <template if:true={selectedObject}>
         <div class="field-section">
+
             <template for:each={inputFields} for:item="field">
                 <div key={field.id} class="field-row">
 
-                    <!-- bind the input value to field.value -->
                     <input type="text"
                         class="dynamic-input"
-                        placeholder="Enter field value..."
+                        placeholder="Select field..."
                         data-id={field.id}
                         value={field.value}
                         onclick={openPopup}
-                        oninput={handleFieldChange}/>
+                        oninput={handleFieldChange} />
 
-                    <button class="btn add" data-id={field.id} onclick={addField}>+</button>
+                    <button class="btn add"
+                            data-id={field.id}
+                            onclick={addField}>+</button>
 
                     <template if:true={field.showRemove}>
-                        <button class="btn remove" data-id={field.id} onclick={removeField}>-</button>
+                        <button class="btn remove"
+                                data-id={field.id}
+                                onclick={removeField}>-</button>
                     </template>
-
                 </div>
             </template>
+
+            <div class="preview-container">
+                <button class="preview-btn" onclick={runPreview}>Preview</button>
+            </div>
+
+        </div>
+    </template>
+
+    <template if:true={records.length}>
+        <div class="table-wrapper">
+            <lightning-datatable
+                key-field="Id"
+                data={records}
+                columns={columns}
+                hide-checkbox-column="true">
+            </lightning-datatable>
         </div>
     </template>
 
@@ -55,4 +74,3 @@
         </c-object-field-popup>
     </template>
 </template>
-<!-- //====== -->
